@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikTok Downloader</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+            color: #555;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: inline-block;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            text-align: center;
+            display: inline-block;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        #result p {
+            margin: 10px 0;
+        }
+        video, audio {
+            width: 100%;
+            max-width: 640px;
+            height: auto;
+            margin-top: 20px;
+            display: block;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>TikTok Downloader</h1>
+<p>Enter the TikTok video link below to download:</p>
+
+<div class="form-group">
+    <label for="tiktok-link">TikTok Link:</label>
+    <input type="text" id="tiktok-link" placeholder="Enter TikTok link">
+</div>
+<button id="download-btn">Download</button>
+
+<div id="result"></div>
+
+<script>
+    document.getElementById('download-btn').addEventListener('click', async function () {
+        const link = document.getElementById('tiktok-link').value.trim();
+        if (!link) {
+            alert('Please enter a TikTok link.');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/tiktokdl?link=${encodeURIComponent(link)}`);
+            const data = await response.json();
+
+            if (!data || !data.data) {
+                document.getElementById('result').innerText = 'Error: Unable to retrieve data. Please check the link and try again.';
+                return;
+            }
+
+            const { play: video, author: { unique_id: username, nickname }, title, images, music } = data.data;
+
+            document.getElementById('result').innerHTML = `
+                <p>Downloaded successfully</p>
+                <p>Username: @${username}</p>
+                <p>Nickname: ${nickname}</p>
+                <p>Title: ${title}</p>
+                <button id="download-video">Download Video</button>
+                <button id="download-audio">Download Audio</button>
+            `;
+
+            const videoElement = document.createElement('video');
+            videoElement.src = video;
+            videoElement.controls = true;
+            document.getElementById('result').appendChild(videoElement);
+
+            const audioElement = document.createElement('audio');
+            audioElement.src = music;
+            audioElement.controls = true;
+            document.getElementById('result').appendChild(audioElement);
+
+            if (images && images.length > 0) {
+                const imagesContainer = document.createElement('div');
+                images.forEach((imageSrc) => {
+                    const imgElement = document.createElement('img');
+                    imgElement.src = imageSrc;
+
+                    const imgDownloadBtn = document.createElement('button');
+                    imgDownloadBtn.textContent = 'Download Image';
+                    imgDownloadBtn.addEventListener('click', () => {
+                        const a = document.createElement('a');
+                        a.href = imageSrc;
+                        a.download = `image.jpg`;
+                        a.click();
+                    });
+
+                    imagesContainer.appendChild(imgElement);
+                    imagesContainer.appendChild(imgDownloadBtn);
+                });
+                document.getElementById('result').appendChild(imagesContainer);
+            }
+
+            document.getElementById('download-video').addEventListener('click', function () {
+                const a = document.createElement('a');
+                a.href = video;
+                a.download = `${title || 'video'}.mp4`;
+                a.click();
+            });
+
+            document.getElementById('download-audio').addEventListener('click', function () {
+                const a = document.createElement('a');
+                a.href = music;
+                a.download = `${title || 'audio'}.mp3`;
+                a.click();
+            });
+
+        } catch (error) {
+            document.getElementById('result').innerText = `Error: ${error.message}`;
+            console.error(error);
+        }
+    });
+</script>
+
+</body>
+</html>
